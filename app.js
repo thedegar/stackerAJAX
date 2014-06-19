@@ -8,6 +8,16 @@ $(document).ready( function() {
 	});
 });
 
+$(document).ready(function() {
+	$('.inspiration-getter').submit(function(event){
+		// zero out results if previous search has run
+		$('.results').html('');
+		// get the top answerers for the tag the user enters
+		var tag = $(this).find("input[name='answerers']").val();
+		getTopAnswerer(tag);
+	});
+})
+
 // this function takes the question object returned by StackOverflow 
 // and creates new result to be appended to DOM
 var showQuestion = function(question) {
@@ -39,6 +49,31 @@ var showQuestion = function(question) {
 	);
 
 	return result;
+};
+
+var showAnswerer = function(count, answerer) {
+
+	// clone our answerer template
+	var result = $('.templates .answerer').clone();
+
+	// Set the answerer property
+	var answererName = result.find('.answerer');
+	answererName.text("#" + count + " : " + answerer.user.display_name);
+
+	//Set the answerer link property
+	var answererLink = result.find('.answerer-link a');
+	answererLink.attr('href', answerer.user.link).text(answerer.user.link);
+
+	// Set the post count property
+	var posts = result.find('.posts');
+	posts.text(answerer.post_count);
+
+	// Set the reputation property
+	var score = result.find('.score');
+	score.text(answerer.score);
+
+	return result;
+	console.log(result);
 };
 
 
@@ -81,6 +116,38 @@ var getUnanswered = function(tags) {
 			var question = showQuestion(item);
 			$('.results').append(question);
 		});
+	})
+	.fail(function(jqXHR, error, errorThrown){
+		var errorElem = showError(error);
+		$('.search-results').append(errorElem);
+	});
+};
+
+var getTopAnswerer = function(tag) {
+	
+	var request = {
+		site: 'stackoverflow',
+		filter: 'default'
+	};
+	
+	var result = $.ajax({
+		url: "http://api.stackexchange.com//2.2/tags/" + tag + "/top-answerers/all_time",
+		data: request,
+		dataType: "jsonp",
+		type: "GET",
+		})
+	.done(function(result){
+		var searchResults = showSearchResults(tag, result.items.length);
+
+		$('.search-results').html(searchResults);
+
+		$.each(result.items, function(i, item) {
+			var count = i + 1;
+			var question = showAnswerer(count, item);
+			$('.results').append(question);
+		});
+
+		console.log(result);
 	})
 	.fail(function(jqXHR, error, errorThrown){
 		var errorElem = showError(error);
